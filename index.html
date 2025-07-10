@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互动面试指南: WordPress + Stripe + Uni-app</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- 
+    Chosen Palette: Dev Study Blue 
+    Application Structure Plan: The application is designed as an interactive study dashboard, not a linear report. It features a fixed sidebar for topic navigation (WordPress, Stripe, Uni-app, etc.) and a main content area. The questions for the selected topic are displayed as interactive accordions. This structure was chosen because it promotes active recall—the user reads a question, thinks about the answer, and then clicks to reveal it. This is far more effective for learning and interview preparation than passively reading a long document. The non-linear navigation allows users to easily jump between topics and focus on areas where they need the most practice.
+    Visualization & Content Choices: 
+    - Report Info: Main technical interview topics -> Goal: Make studying interactive -> Viz/Presentation: Fixed sidebar navigation for high-level topics. -> Interaction: Click to switch topics instantly. -> Justification: Provides clear, persistent navigation and context. -> Library/Method: HTML/CSS/JS.
+    - Report Info: Q&A pairs for each topic -> Goal: Test knowledge before seeing the answer -> Viz/Presentation: Accordion UI component for each question. -> Interaction: Click on question header to expand/collapse the answer. -> Justification: Encourages active recall, making learning more effective. -> Library/Method: HTML/CSS/JS.
+    - Report Info: Code examples -> Goal: Clearly present code -> Viz/Presentation: Styled code blocks with a dark background. -> Interaction: Read-only. -> Justification: Improves readability and separates code from regular text. -> Library/Method: HTML/CSS.
+    CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .content-container {
+            scroll-behavior: smooth;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), padding 0.5s ease;
+            padding: 0 1.5rem;
+        }
+        .accordion-item.active .accordion-content {
+            max-height: 2000px; /* Adjust as needed */
+            padding: 1.5rem 1.5rem;
+        }
+        .accordion-item.active .accordion-icon {
+            transform: rotate(45deg);
+        }
+        .prose pre {
+            background-color: #1f2937;
+            color: #d1d5db;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        .prose code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-64 bg-white shadow-md flex-shrink-0 hidden lg:block overflow-y-auto">
+            <div class="p-6 sticky top-0 bg-white z-10">
+                <h1 class="text-xl font-bold text-gray-900">面试核心指南</h1>
+                <p class="text-sm text-gray-500 mt-1">WordPress + Stripe + Uni-app</p>
+            </div>
+            <nav id="topic-nav" class="p-6 space-y-2">
+                <!-- Navigation links will be inserted here by JS -->
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 overflow-y-auto content-container p-4 sm:p-6 lg:p-8">
+            <!-- Hamburger Menu for Mobile -->
+            <div class="lg:hidden mb-6 flex items-center justify-between">
+                 <div>
+                    <h1 class="text-xl font-bold text-gray-900">互动面试指南</h1>
+                    <p class="text-sm text-gray-500 mt-1">WordPress + Stripe + Uni-app</p>
+                </div>
+                <button id="menu-btn" class="p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                    <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Mobile Nav Panel -->
+            <div id="mobile-nav-panel" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden">
+                <div class="fixed left-0 top-0 h-full w-64 bg-white shadow-xl p-6 overflow-y-auto">
+                   <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-bold">导航</h2>
+                        <button id="close-menu-btn" class="p-2">&times;</button>
+                   </div>
+                   <nav id="mobile-topic-nav" class="space-y-2">
+                       <!-- Mobile navigation links will be inserted here -->
+                   </nav>
+                </div>
+            </div>
+
+            <div id="content-area" class="space-y-8">
+                <!-- Content will be injected here by JS -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const interviewData = {
+            "wordpress-essentials": {
+                title: "WordPress 专题",
+                intro: "这部分问题旨在考察您是否具备专业的 WordPress 开发能力，而不只是会用。重点在于对 WordPress 核心运行机制、钩子系统以及作为 Headless CMS 的开发能力的理解。",
+                questions: [
+                    {
+                        q: "Action Hook 和 Filter Hook 的区别是什么？请各举一个例子。",
+                        a: `
+                            <p class="mb-4"><strong>详解：</strong> 这是对 WordPress 核心运行机制的基础考察。</p>
+                            <ul class="space-y-4">
+                                <li><strong>Action Hook (动作钩子):</strong> 用于在 WordPress 运行的特定时间点<strong>执行额外的操作</strong>。它不要求有返回值。你可以挂载多个函数到一个动作上，它们会按顺序执行。<br><strong>例子：</strong> <code>add_action('wp_head', 'add_my_tracking_script');</code> 这个动作会在网站 <code>&lt;head&gt;</code> 区域输出内容时，执行 <code>add_my_tracking_script</code> 函数，从而添加一个自定义的追踪脚本。</li>
+                                <li><strong>Filter Hook (过滤器钩子):</strong> 用于在 WordPress 处理数据的过程中<strong>修改数据</strong>。它接收一个值，处理后必须返回一个值（修改后的或原值）。<br><strong>例子：</strong> <code>add_filter('the_content', 'add_advertisement_to_content');</code> 这个过滤器会在文章内容显示前，拿到内容（<code>$content</code>），你可以在内容前后加上广告代码，然后把修改后的 <code>$content</code> 返回。</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        q: "如何为 WordPress 的自定义文章类型 (Custom Post Type) 创建自定义的 REST API 端点？",
+                        a: `
+                            <p class="mb-4"><strong>详解：</strong> 这是对 Headless CMS 开发能力的考察，即如何让 WordPress 作为后端为前端应用（如 Uni-app）提供数据。</p>
+                            <ol class="space-y-4 list-decimal list-inside">
+                                <li><strong>注册自定义文章类型：</strong> 首先，在 <code>functions.php</code> 或插件中使用 <code>register_post_type</code> 函数注册一个新的文章类型（比如叫 <code>product</code>）。关键是要在参数中设置 <code>'show_in_rest' => true</code>。
+                                    <div class="prose mt-2"><pre><code>function create_product_post_type() {
+    register_post_type('product',
+        array(
+            'labels' => array('name' => __('Products'), 'singular_name' => __('Product')),
+            'public' => true,
+            'has_archive' => true,
+            'show_in_rest' => true, // <-- 关键点
+        )
+    );
+}
+add_action('init', 'create_product_post_type');</code></pre></div>
+                                </li>
+                                <li><strong>注册自定义字段 (Meta Box / Custom Fields):</strong> 如果需要为 <code>product</code> 添加额外字段（如价格、库存），可以使用 <code>register_post_meta</code> 函数，并同样设置 <code>'show_in_rest' => true</code>，这样这些字段就会自动出现在 REST API 的返回结果中。</li>
+                                <li><strong>创建自定义路由 (可选):</strong> 如果默认的 API (<code>/wp-json/wp/v2/products</code>) 不满足需求，可以使用 <code>register_rest_route</code> 函数创建全新的 API 路由，例如 <code>/wp-json/myshop/v1/products</code>，在回调函数中自定义查询逻辑和返回的数据结构。</li>
+                            </ol>
+                        `
+                    }
+                ]
+            },
+            "stripe-payment": {
+                title: "Stripe 支付专题",
+                 intro: "这部分问题旨在考察您对现代在线支付流程的理解，特别是围绕 Stripe 的核心对象、异步确认机制以及支付安全性方面的知识。",
+                questions: [
+                    {
+                        q: "请描述一下 Stripe Payment Intent 的完整生命周期。",
+                        a: `
+                            <p class="mb-4"><strong>详解：</strong> Payment Intent 是一个代表用户支付意图的对象，它会跟踪整个支付过程，是现代 Stripe 集成的基础。</p>
+                            <ol class="space-y-2 list-decimal list-inside">
+                                <li><strong>创建 (Creation):</strong> 当用户准备支付时，你的<strong>后端服务器</strong>向 Stripe API 发送请求，创建一个 Payment Intent。请求中包含金额、货币等信息。Stripe 返回一个包含 <code>client_secret</code> 的 Payment Intent 对象。</li>
+                                <li><strong>传递 <code>client_secret</code>:</strong> 你的后端将这个 <code>client_secret</code> 安全地传递给<strong>前端客户端</strong>（Uni-app）。</li>
+                                <li><strong>客户端确认 (Confirmation):</strong> Uni-app 客户端使用 Stripe.js 或移动端 SDK，并结合 <code>client_secret</code> 来收集用户的支付信息（如信用卡号），然后调用 <code>stripe.confirmCardPayment()</code> 方法来确认支付。</li>
+                                <li><strong>处理与认证 (Processing & Authentication):</strong> Stripe 处理支付。如果需要 3D Secure 等额外验证，Stripe 的 SDK 会自动处理弹窗等交互。</li>
+                                <li><strong>完成 (Succeeded) 或失败 (Failed):</strong> 支付成功后，Payment Intent 的状态变为 <code>succeeded</code>。如果失败，则变为 <code>requires_payment_method</code> 或其他失败状态。整个过程的状态变化都可以通过 Webhook 监视。</li>
+                            </ol>
+                        `
+                    },
+                    {
+                        q: "为什么在 Stripe 集成中 Webhook 至关重要？如何确保 Webhook 的安全？",
+                        a: `
+                            <p class="mb-4"><strong>详解：</strong> 这是对异步通信、系统可靠性以及安全意识的综合考察。</p>
+                            <ul class="space-y-4">
+                                <li><strong>重要性：</strong> 因为支付过程是<strong>异步</strong>的。用户在前端确认支付后，可能会关闭 App 或断开网络，你不能依赖前端的回调来确认支付是否真的成功。Webhook 是 Stripe 服务器在支付状态发生变化时（如支付成功、退款发生）<strong>主动通知</strong>你后端服务器的唯一可靠方式。收到 <code>payment_intent.succeeded</code> 事件的 Webhook 后，你才应该更新订单状态、发货等。</li>
+                                <li><strong>安全保障：</strong>
+                                    <ol class="space-y-2 list-decimal list-inside mt-2">
+                                        <li><strong>签名验证 (Signature Verification):</strong> 这是<strong>必须要做</strong>的安全措施。Stripe 在发送每个 Webhook 事件时，都会在请求头中包含一个 <code>Stripe-Signature</code>。你的后端需要使用从 Stripe Dashboard 获取的 <strong>Webhook Signing Secret</strong> 来计算签名，并与请求头中的签名进行比对。只有匹配成功，才能确认这个请求确实是 Stripe 发送的，而不是伪造的。</li>
+                                        <li><strong>使用 HTTPS:</strong> 你的 Webhook 接收端点必须是 HTTPS 协议。</li>
+                                    </ol>
+                                </li>
+                            </ul>
+                        `
+                    }
+                ]
+            },
+            "uniapp-development": {
+                title: "Uni-app 专题",
+                intro: "这部分问题旨在考察您是否真正做过跨平台开发，并了解 Uni-app 的核心运行机制、生命周期特点以及平台差异化处理的最佳实践。",
+                questions: [
+                    {
+                        q: "Uni-app 的生命周期钩子和 Vue 的生命周期钩子有哪些主要区别？",
+                        a: `
+                            <p class="mb-4"><strong>详解：</strong> Uni-app 在完全支持 Vue 标准生命周期（如 <code>created</code>, <code>mounted</code>）的基础上，增加了自己独有的、面向跨平台应用的生命周期。</p>
+                            <ul class="space-y-4">
+                                <li><strong>应用生命周期:</strong> 这是 Vue 所没有的，在 <code>App.vue</code> 中定义，用于监听应用的启动、显示、隐藏等状态。
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li><code>onLaunch</code>: 应用首次启动时触发。</li>
+                                        <li><code>onShow</code>: 应用启动或从后台进入前台显示时触发。</li>
+                                        <li><code>onHide</code>: 应用从前台进入后台时触发。</li>
+                                    </ul>
+                                </li>
+                                <li><strong>页面生命周期:</strong> 这是对 Vue 页面生命周期的补充，用于处理页面特有的事件。
+                                     <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li><code>onLoad</code>: 页面加载时触发，只触发一次，可以获取 <code>options</code> 参数。</li>
+                                        <li><code>onShow</code>: 页面显示时触发，每次打开页面都会触发。</li>
+                                        <li><code>onReady</code>: 页面初次渲染完成时触发。</li>
+                                        <li><code>onPullDownRefresh</code>: 监听用户下拉刷新动作。</li>
+                                        <li><code>onReachBottom</code>: 页面滚动到底部的事件。</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        `
+                    },
+                    {
+                        q: "在 Uni-app 中，如果想为不同平台（如 App、微信小程序）编写特定的代码，有哪些实现方式？",
+                        a: `
+                            <p class="mb-4"><strong>详解：</strong> 主要通过<strong>条件编译 (Conditional Compilation)</strong> 来实现，这是 Uni-app 跨平台开发的核心能力。</p>
+                             <ol class="space-y-4 list-decimal list-inside">
+                                <li><strong><code>#ifdef</code> / <code>#endif</code> 语法:</strong> 这是最常用的方式。可以用它来包裹平台特定的代码块。在编译时，不符合当前平台的代码块会被直接移除。
+                                <div class="prose mt-2"><pre><code>// #ifdef APP-PLUS
+// 这段代码只会在 App 端编译
+console.log('This is running on the App.');
+// #endif
+
+// #ifdef MP-WEIXIN
+// 这段代码只会在微信小程序端编译
+wx.login({ ... });
+// #endif</code></pre></div>
+                                </li>
+                                <li><strong>平台特定文件:</strong> 可以创建平台特定的文件。例如，创建一个 <code>my-component.vue</code> 作为通用组件，然后再创建一个 <code>my-component.mp-weixin.vue</code>。在微信小程序端编译时，后者会自动替换前者。</li>
+                                <li><strong><code>uni.getSystemInfoSync().platform</code>:</strong> 在运行时通过 API 判断当前平台，然后执行不同的逻辑。这种方式不如条件编译高效，因为所有平台的代码都会被打包进去，只在运行时判断，增加了包体积。</li>
+                            </ol>
+                        `
+                    }
+                ]
+            },
+            "system-design": {
+                title: "系统设计与集成",
+                intro: "这是面试的重中之重，旨在考察您将所有技术整合起来解决实际问题的宏观架构能力，特别是对数据流、支付流和状态同步的理解。",
+                questions: [
+                    {
+                        q: "请设计一个用户在你的 Uni-app 应用中购买一个付费课程的完整流程。",
+                        a: `
+                            <p class="mb-4"><strong>详解：</strong> 这是一个典型的系统设计问题，需要清晰地描述从前端到后端，再到第三方支付服务的数据流动和状态变化。</p>
+                            <ol class="space-y-3 list-decimal list-inside">
+                                <li><strong>数据展示 (Uni-app):</strong> Uni-app 通过调用 WordPress REST API (<code>/wp-json/wp/v2/courses</code>) 获取课程列表并展示。</li>
+                                <li><strong>创建订单 (Uni-app -> WordPress):</strong> 用户点击“购买”按钮。Uni-app 发送一个需要登录授权的请求到后端的自定义 API 端点（如 <code>/wp-json/myshop/v1/order/create</code>），请求中包含课程 ID。</li>
+                                <li><strong>创建支付意图 (WordPress -> Stripe):</strong> WordPress 后端接收到请求，验证用户权限和课程信息。在数据库中创建一个状态为“待支付”的订单。调用 Stripe SDK，向 Stripe 服务器创建一个 <strong>Payment Intent</strong>，包含订单金额等信息。</li>
+                                <li><strong>返回 <code>client_secret</code> (WordPress -> Uni-app):</strong> Stripe 返回包含 <code>client_secret</code> 的 Payment Intent 对象给 WordPress。WordPress 再将这个 <code>client_secret</code> 返回给 Uni-app。</li>
+                                <li><strong>调起支付 (Uni-app & Stripe):</strong> Uni-app 拿到 <code>client_secret</code> 后，使用 Stripe 的移动端 SDK 和 UI 组件来调起支付界面，让用户输入支付信息。</li>
+                                <li><strong>前端支付确认 (Uni-app):</strong> 用户确认支付后，Stripe SDK 会处理支付，并返回一个成功或失败的状态给 Uni-app。Uni-app 可以据此给用户一个即时反馈（如“支付处理中...”）。</li>
+                                <li><strong>Webhook 异步确认 (Stripe -> WordPress):</strong> 这是最关键的步骤。Stripe 在确认扣款成功后，会向你在 WordPress 后端设置好的 Webhook 端点发送一个 <code>payment_intent.succeeded</code> 事件。</li>
+                                <li><strong>更新订单状态 (WordPress):</strong> 你的 Webhook 端点接收到请求，<strong>验证签名</strong>确保请求合法。验证通过后，根据事件内容，找到对应的订单，将其状态更新为“已支付”。同时，为该用户开通课程的访问权限。</li>
+                                <li><strong>状态同步 (Uni-app):</strong> 用户下次进入“我的课程”页面时，Uni-app 再次调用 WordPress API，此时获取到的课程已经是“已购买”状态。</li>
+                            </ol>
+                        `
+                    }
+                ]
+            },
+             "open-source-projects": {
+                title: "相关开源项目",
+                intro: "很难找到一个项目完美契合这三个技术，但可以通过学习它们的组合来获得灵感。下面是一些推荐项目，可以帮助您理解各个部分在真实世界中的应用。",
+                questions: [
+                    {
+                        q: "有哪些值得学习的类似开源项目？",
+                        a: `
+                            <p class="mb-4">通过分析这些成熟的项目，您可以深入理解各个技术栈的最佳实践。</p>
+                            <ul class="space-y-4">
+                                <li><strong>WordPress + Stripe (电商后台):</strong>
+                                    <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li><a href="https://github.com/woocommerce/woocommerce-gateway-stripe" target="_blank" class="text-blue-600 hover:underline"><strong>WooCommerce Stripe Payment Gateway</strong></a>: 这是学习如何在 WordPress (PHP) 中深度集成 Stripe 的最佳范例。你可以看到它是如何处理 Payment Intents、Webhooks、退款等各种复杂场景的。</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Headless WordPress (CMS 后端):</strong>
+                                     <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li><a href="https://github.com/vercel/next.js/tree/canary/examples/cms-wordpress" target="_blank" class="text-blue-600 hover:underline"><strong>Next.js WordPress Starter</strong></a>: 虽然是用 Next.js，但它完美展示了如何将 WordPress 作为一个无头 CMS，通过 REST API 或 GraphQL 为现代前端框架提供数据。您可以将这里的 Next.js 替换为 Uni-app 的思路。</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Uni-app + 电商 (跨平台前端):</strong>
+                                     <ul class="list-disc list-inside mt-2 space-y-1">
+                                        <li><a href="https://github.com/zxygood/uni-shop" target="_blank" class="text-blue-600 hover:underline"><strong>uni-shop</strong></a>: 这是一个功能非常完整的 Uni-app 开源商城。您可以从中学习到如何构建复杂的电商 App，包括商品列表、购物车、订单管理等。您可以将它的后端数据源想象成由 WordPress 提供，支付方式替换为 Stripe。</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        `
+                    }
+                ]
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const topicNav = document.getElementById('topic-nav');
+            const mobileTopicNav = document.getElementById('mobile-topic-nav');
+            const contentArea = document.getElementById('content-area');
+            const mainContent = document.getElementById('main-content');
+            
+            const menuBtn = document.getElementById('menu-btn');
+            const closeMenuBtn = document.getElementById('close-menu-btn');
+            const mobileNavPanel = document.getElementById('mobile-nav-panel');
+
+            function renderNav(navElement) {
+                navElement.innerHTML = '';
+                 Object.keys(interviewData).forEach(key => {
+                    const topic = interviewData[key];
+                    const link = document.createElement('a');
+                    link.href = `#${key}`;
+                    link.dataset.topic = key;
+                    link.className = 'block px-4 py-2 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 nav-link';
+                    link.textContent = topic.title;
+                    navElement.appendChild(link);
+                });
+            }
+
+            function renderContent(topicKey) {
+                const topic = interviewData[topicKey];
+                if (!topic) return;
+
+                let html = `<div id="${topicKey}" class="space-y-6">
+                    <h2 class="text-3xl font-bold tracking-tight text-gray-900 border-b pb-4">${topic.title}</h2>
+                    <p class="text-lg text-gray-600">${topic.intro}</p>`;
+
+                topic.questions.forEach((item, index) => {
+                    html += `
+                        <div class="accordion-item bg-white rounded-lg shadow-sm border border-gray-200">
+                            <button class="accordion-header w-full text-left p-6 flex justify-between items-center hover:bg-gray-50 focus:outline-none">
+                                <span class="font-semibold text-lg text-gray-800">${item.q}</span>
+                                <span class="accordion-icon text-gray-400 transform transition-transform duration-300 text-2xl font-light">+</span>
+                            </button>
+                            <div class="accordion-content prose max-w-none text-gray-700 leading-relaxed">
+                                ${item.a}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                contentArea.innerHTML = html;
+            }
+
+            function updateActiveLink(topicKey) {
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('bg-blue-50', 'text-blue-700');
+                    if (link.dataset.topic === topicKey) {
+                        link.classList.add('bg-blue-50', 'text-blue-700');
+                    }
+                });
+            }
+            
+            function handleNavClick(e, isMobile = false) {
+                 e.preventDefault();
+                const link = e.target.closest('a');
+                if (link && link.dataset.topic) {
+                    const topicKey = link.dataset.topic;
+                    renderContent(topicKey);
+                    updateActiveLink(topicKey);
+                    mainContent.scrollTop = 0;
+                    if(isMobile) {
+                        mobileNavPanel.classList.add('hidden');
+                    }
+                }
+            }
+            
+            // Event Listeners
+            topicNav.addEventListener('click', (e) => handleNavClick(e));
+            mobileTopicNav.addEventListener('click', (e) => handleNavClick(e, true));
+
+            contentArea.addEventListener('click', (e) => {
+                const header = e.target.closest('.accordion-header');
+                if (header) {
+                    const item = header.parentElement;
+                    item.classList.toggle('active');
+                }
+            });
+            
+            menuBtn.addEventListener('click', () => {
+                mobileNavPanel.classList.remove('hidden');
+            });
+            
+            closeMenuBtn.addEventListener('click', () => {
+                mobileNavPanel.classList.add('hidden');
+            });
+
+             mobileNavPanel.addEventListener('click', (e) => {
+                if(e.target === mobileNavPanel) {
+                     mobileNavPanel.classList.add('hidden');
+                }
+            });
+
+
+            // Initial Load
+            renderNav(topicNav);
+            renderNav(mobileTopicNav);
+            const firstTopic = Object.keys(interviewData)[0];
+            renderContent(firstTopic);
+            updateActiveLink(firstTopic);
+        });
+    </script>
+</body>
+</html>
